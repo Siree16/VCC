@@ -23,7 +23,7 @@ def shorten_url():
 
     short_code = generate_short_code()
     short_url = f"http://192.168.56.102:5000/{short_code}"
-    url_mapping[short_code] = data
+    url_mapping[short_code] = data  # Store the mapping
 
     return jsonify({"short_url": short_url})
 
@@ -43,7 +43,13 @@ def get_original_url():
     if not data:
         return jsonify({"error": "No short code provided"}), 400
 
-    original_url = url_mapping.get(data)
+    # Extract the short code from the short URL (if provided)
+    if data.startswith("http://192.168.56.102:5000/"):
+        short_code = data.split("/")[-1]  # Extract the last part of the URL
+    else:
+        short_code = data  # Assume it's already the short code
+
+    original_url = url_mapping.get(short_code)
     if original_url:
         return jsonify({"original_url": original_url})
     else:
