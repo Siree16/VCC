@@ -1,13 +1,12 @@
 from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS  # ✅ Import CORS
+import secrets
 
 app = Flask(__name__)
 CORS(app)  # ✅ Enable CORS for all routes
 
-# Simulated in-memory storage for short URLs
-short_url_mapping = {
-    "abc123": "https://www.google.com",  # Example short URL to original URL mapping
-}
+# In-memory storage for short URL mappings (for testing purposes)
+short_url_mapping = {}
 
 # URL Shortening Endpoint
 @app.route('/shorten', methods=['POST'])
@@ -16,8 +15,13 @@ def shorten_url():
     if not data:
         return jsonify({"error": "No URL provided"}), 400
 
-    # Generate a simulated short URL (this would usually be dynamic)
-    short_url = f"http://192.168.56.102:5000/abc123"  # Simulated short URL
+    # Generate a random 6-character short URL code
+    short_code = secrets.token_urlsafe(6)  # Generates a URL-safe random string of length 6
+    short_url = f"http://192.168.56.102:5000/{short_code}"  # Full short URL with the generated code
+
+    # Save the mapping from short code to original URL
+    short_url_mapping[short_code] = data
+
     return jsonify({"short_url": short_url})
 
 # Endpoint to retrieve the original URL from a short URL code
