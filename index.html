@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+        input { width: 80%; padding: 10px; margin: 10px 0; }
+        button { padding: 10px 20px; cursor: pointer; }
+        #shortUrl, #originalUrl { margin-top: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2>URL Shortener</h2>
+    
+    <h3>Shorten a URL</h3>
+    <input type="text" id="longUrl" placeholder="Enter long URL">
+    <button onclick="shortenUrl()">Shorten</button>
+    <p id="shortUrl"></p>
+
+    <h3>Retrieve Original URL</h3>
+    <input type="text" id="shortCode" placeholder="Enter short URL code">
+    <button onclick="getOriginalUrl()">Get Original</button>
+    <p id="originalUrl"></p>
+
+    <script>
+        function shortenUrl() {
+            let longUrl = document.getElementById("longUrl").value;
+            if (!longUrl) {
+                alert("Please enter a URL.");
+                return;
+            }
+
+            fetch("http://192.168.56.102:5000/shorten", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: longUrl })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.short_url) {
+                    document.getElementById("shortUrl").innerText = "Short URL: " + data.short_url;
+                } else {
+                    alert("Failed to shorten URL.");
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function getOriginalUrl() {
+            let shortCode = document.getElementById("shortCode").value;
+            if (!shortCode) {
+                alert("Please enter a short URL code.");
+                return;
+            }
+
+            fetch("http://192.168.56.102:5000/" + shortCode, { method: "GET" })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    return response.json();
+                }
+            })
+            .then(data => {
+                if (data && data.error) {
+                    document.getElementById("originalUrl").innerText = "Error: " + data.error;
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+    </script>
+</body>
+</html>
