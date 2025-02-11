@@ -1,12 +1,18 @@
 from flask import Flask, request, jsonify, redirect
-from flask_cors import CORS  # ✅ Import CORS
-import secrets
+from flask_cors import CORS
+import random
+import string
 
 app = Flask(__name__)
-CORS(app)  # ✅ Enable CORS for all routes
+CORS(app)
 
-# In-memory storage for short URL mappings (for testing purposes)
-short_url_mapping = {}
+# In-memory storage for URLs
+url_mapping = {}
+
+# Function to generate a unique short code
+def generate_short_code():
+    characters = string.ascii_letters + string.digits
+    return ''.join(random.choice(characters) for _ in range(6))
 
 # URL Shortening Endpoint
 @app.route('/shorten', methods=['POST'])
@@ -15,25 +21,33 @@ def shorten_url():
     if not data:
         return jsonify({"error": "No URL provided"}), 400
 
-    # Generate a random 6-character short URL code
-    short_code = secrets.token_urlsafe(6)  # Generates a URL-safe random string of length 6
-    short_url = f"http://192.168.56.102:5000/{short_code}"  # Full short URL with the generated code
-
-    # Save the mapping from short code to original URL
-    short_url_mapping[short_code] = data
+    short_code = generate_short_code()
+    short_url = f"http://192.168.56.102:5000/{short_code}"
+    url_mapping[short_code] = data
 
     return jsonify({"short_url": short_url})
 
-# Endpoint to retrieve the original URL from a short URL code
+# URL Redirection Endpoint
 @app.route('/<short_code>', methods=['GET'])
-def get_original_url(short_code):
-    # Check if the short URL code exists in the mapping
-    original_url = short_url_mapping.get(short_code)
-    if not original_url:
-        return jsonify({"error": "Short URL not found"}), 404
+def redirect_to_original(short_code):
+    original_url = url_mapping.get(short_code)
+    if original_url:
+        return redirect(original_url)
+    else:
+        return jsonify({"error": "URL not found"}), 404
 
-    # Redirect to the original URL
-    return redirect(original_url)
+# Endpoint to retrieve original URL
+@app.route('/get_original', methods=['POST'])
+def get_original_url():
+    data = request.json.get("short_code")
+    if not data:
+        return jsonify({"error": "No short code provided"}), 400
+
+    original_url = url_mapping.get(data)
+    if original_url:
+        return jsonify({"original_url": original_url})
+    else:
+        return jsonify({"error": "URL not found"}), 404
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000, debug=True)  # ✅ Ensure Flask runs on all IPs
+    app.run(host="0.0.0.0", port=5000, debug=True)
